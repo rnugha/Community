@@ -12,6 +12,13 @@
 
 ---
 
+### Git
+To clone project with submodule
+
+```bash
+git clone --recurse-submodules https://github.com/rnugha/Community.git
+```
+
 ### Deployment Instructions
 
 1) Install poetry:
