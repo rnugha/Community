@@ -1,4 +1,5 @@
 import os
+import re, markdown
 from typing import List, Dict, Any
 from langgraph.graph import StateGraph
 from langgraph.graph.state import CompiledStateGraph
@@ -55,23 +56,43 @@ class Chatbot:
             state["question"],
             state.get("chat_history", [])
         )
-        context = retriever.invoke(optimized_query)
+        context = retriever.invoke(f"query: {optimized_query}")
         return {"context": context}
         
     def _generate(self, state: State):
         context = self._format_docs(state["context"])
         question = state["question"]
         chat_history = state.get("chat_history", [])
-        
         groq_messages = prompt_template(context, question, chat_history)
         print(groq_messages)
-        
+
         try:
             response = call_groq_llama3(groq_messages)
-            return {"answer": response}
+            cleaned_response = self._format_answer_html(response)
+            return {"answer": cleaned_response}
         except Exception as e:
             print(f"Generation error: {e}")
             return {"answer": "Sorry, an error occurred"}
+
+
+    def _format_answer_html(self, response: str) -> str:
+        # Remove surrounding quotes
+        response = response.strip('"')
+
+        # Safe replacement of double-escaped `\n` (written as \\n in the string)
+        response = response.replace("\n", "<br/>")
+
+        # Optional: convert raw links to markdown format
+        response = re.sub(
+            r'(https?://[^\s]+)',
+            r'[\1](\1)',
+            response
+        )
+
+        # Let markdown handle lists, bold, etc.
+        html = markdown.markdown(response, extensions=['tables'])
+        return f'<div class="markdown-body">{html}</div>'
+
 
     def _build_workflow(self) -> CompiledStateGraph:
         graph = StateGraph(schema=State)

@@ -35,7 +35,7 @@ poetry install
 
 3) Run the application:
 ```bash
-poetry run uvicorn app:app --reload
+poetry run uvicorn app:app --reload --port 8001
 ```
 
 To deploy the application, use one of the following commands:

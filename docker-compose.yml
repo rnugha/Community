@@ -1,15 +1,13 @@
-version: "3.9"
-
 services:
   university-bot:
     build: .
     container_name: university-chatbot
     ports:
-      - "8000:8000"
+      - "8001:8001"
     volumes:
       - ./data:/app/data
       - ./chroma_store:/app/chroma_store
     environment:
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - GROQ_API_KEY=${GROQ_API_KEY}
       - CHROMA_PATH=/app/chroma_store
       - DATA_PATH=/app/data

@@ -14,7 +14,7 @@ RUN poetry config virtualenvs.create false \
 COPY . .
 
 # Переменные окружения по умолчанию
-ENV OPENAI_API_KEY=""
+ENV GROQ_API_KEY=""
 ENV CHROMA_PATH=/app/chroma_store
 ENV DATA_PATH=/app/data
 
@@ -22,4 +22,4 @@ ENV DATA_PATH=/app/data
 RUN mkdir -p /app/data /app/chroma_store
 
 # Запускаем FastAPI (можно поменять на ui.py при желании)
-CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8001"]

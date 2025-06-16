@@ -25,6 +25,7 @@ def split_documents(documents):
         for part in parts:
             part = clean_text(part)
             if part and len(part) > 1:
+                part = f"passage: {part}"
                 chunks.append(Document(page_content=part, metadata=doc.metadata))
     return chunks
 
