@@ -1,8 +1,11 @@
 import os
+import json
 import re, markdown
 from typing import List, Dict, Any
 from langgraph.graph import StateGraph
 from langgraph.graph.state import CompiledStateGraph
+from langdetect import detect
+from deep_translator import GoogleTranslator
 
 from .utils import get_vectorstore, init_env, ingest_pdfs_to_chroma
 from .state import State
@@ -46,25 +49,36 @@ class Chatbot:
             return response.strip('"\'') or question
         except Exception:
             return question
-
+        
+    def translate_to_ru(self, query: str) -> str:
+        try:
+            lang = detect(query)
+            if lang in ["en", "kk"]:
+                return GoogleTranslator(source='auto', target='ru').translate(query)
+        except Exception:
+            pass
+        return query
+    
+    
     def _retrieve(self, state: State):
         retriever = self.vectorstore.as_retriever(
             search_type="similarity", 
-            search_kwargs={"k": 4}
+            search_kwargs={"k": 10}
         )
         optimized_query = self._summarize_query(
             state["question"],
             state.get("chat_history", [])
         )
-        context = retriever.invoke(f"query: {optimized_query}")
+        translated_query = self.translate_to_ru(optimized_query)
+        context = retriever.invoke(f"query: {translated_query}")
         return {"context": context}
+
         
     def _generate(self, state: State):
         context = self._format_docs(state["context"])
         question = state["question"]
         chat_history = state.get("chat_history", [])
         groq_messages = prompt_template(context, question, chat_history)
-        print(groq_messages)
 
         try:
             response = call_groq_llama3(groq_messages)
@@ -74,22 +88,19 @@ class Chatbot:
             print(f"Generation error: {e}")
             return {"answer": "Sorry, an error occurred"}
 
-
     def _format_answer_html(self, response: str) -> str:
-        # Remove surrounding quotes
-        response = response.strip('"')
+        try:
+            response = json.loads(response)
+        except Exception:
+            response = response.strip()
+            if (response.startswith('"') and response.endswith('"')) or (response.startswith("'") and response.endswith("'")):
+                response = response[1:-1]
+            response = response.replace('\\"', '"').replace("\\'", "'")
 
-        # Safe replacement of double-escaped `\n` (written as \\n in the string)
         response = response.replace("\n", "<br/>")
 
-        # Optional: convert raw links to markdown format
-        response = re.sub(
-            r'(https?://[^\s]+)',
-            r'[\1](\1)',
-            response
-        )
+        response = re.sub(r'(https?://[^\s]+)', r'[\1](\1)', response)
 
-        # Let markdown handle lists, bold, etc.
         html = markdown.markdown(response, extensions=['tables'])
         return f'<div class="markdown-body">{html}</div>'
 

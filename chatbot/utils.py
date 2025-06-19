@@ -1,32 +1,25 @@
 import re
 from dotenv import load_dotenv
-from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import PyPDFDirectoryLoader
 from langchain_community.vectorstores import Chroma
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain.docstore.document import Document
 
-
 def load_documents(data_path):
     loader = PyPDFDirectoryLoader(data_path)
     return loader.load()
 
-def clean_text(text):
-    text = text.replace("\n", " ")
-    text = re.sub(r'\s+', ' ', text)
-    return text.strip()
-
-def split_documents(documents):
+def extract_chunks(documents):
     chunks = []
-    pattern = r'(?=\n?\d{1,2}\.\s)'
-
     for doc in documents:
-        parts = re.split(pattern, doc.page_content)
-        for part in parts:
-            part = clean_text(part)
-            if part and len(part) > 1:
-                part = f"passage: {part}"
-                chunks.append(Document(page_content=part, metadata=doc.metadata))
+        text = doc.page_content
+        text = text.replace('\r', ' ')
+
+        pattern = r'(chunk\s*\n*\s*\d+\..*?)(?=chunk\s*\n*\s*\d+\.|$)'
+        matches = re.findall(pattern, text, re.DOTALL | re.IGNORECASE)
+        for match in matches:
+            clean_part = match.strip().replace('\n', ' ')
+            chunks.append(Document(page_content=f"passage: {clean_part}", metadata=doc.metadata))
     return chunks
 
 def get_embedding_function():
@@ -40,8 +33,11 @@ def init_env():
 
 def ingest_pdfs_to_chroma(data_path, chroma_path):
     documents = load_documents(data_path)
-    chunks = split_documents(documents)
-    ids = [f"chunk-{i}" for i in range(len(chunks))]
+    chunks = extract_chunks(documents)
+    if not chunks:
+        raise ValueError("No chunks extracted! Please check splitting regex.")
+    print(f"Extracted {len(chunks)} chunks")
+    ids = [f"chunk-{i+1}" for i in range(len(chunks))]
     db = get_vectorstore(chroma_path)
     db.add_documents(chunks, ids=ids)
     db.persist()

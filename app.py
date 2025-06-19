@@ -1,6 +1,6 @@
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import PlainTextResponse
+from fastapi.responses import PlainTextResponse, JSONResponse
 from pydantic import BaseModel
 from chatbot.chatbot import Chatbot
 import uvicorn
@@ -32,7 +32,8 @@ async def ask_question(request: Request):
         question = data.get("question")
         chat_history = data.get("chat_history", [])
         
-        return await bot.process_message(question, chat_history)
+        answer = await bot.process_message(question, chat_history)
+        return JSONResponse(content={"answer": answer})
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

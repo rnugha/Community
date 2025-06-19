@@ -1,4 +1,4 @@
-# SDU Chatbot with LangChain, LangGraph and DeepSeek
+# SDU Chatbot with LangChain, LangGraph and Chroma
 
 Интерактивный чат-бот, который отвечает на вопросы студентов, с использованием LangChain, LangGraph и Chroma для векторного поиска.
 
@@ -45,13 +45,6 @@ For running in the foreground:
 ```bash
 docker compose -p <PROJECT_NAME> up --build
 ```
-
-For running in detached mode:
-
-```bash
-docker compose -p <PROJECT_NAME> up --build -d
-```
-Put desired name inplace of `<PROJECT_NAME>`.
 
 
 ### Structure

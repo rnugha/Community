@@ -19,6 +19,9 @@ groq = "^0.24.0"
 pypdf = "^5.4.0"
 sentence-transformers = "^4.1.0"
 python-multipart="^0.0.20"
+markdown = "^3.8"
+langdetect = "^1.0.9"
+deep-translator = "^1.11.4"
 
 [build-system]
 requires = ["poetry-core"]
